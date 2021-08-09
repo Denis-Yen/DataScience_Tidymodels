@@ -1,0 +1,11 @@
+---
+title: "Precios De Los Muebles"
+author: "Denis Rodríguez"
+date: '`Sys.Date()`'
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
