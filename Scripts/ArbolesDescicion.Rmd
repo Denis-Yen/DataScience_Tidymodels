@@ -6,6 +6,30 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE, cache.lazy = FALSE, warning = FALSE,
+                      message = FALSE, echo = TRUE, dpi = 180,
+                      fig.width = 8, fig.height = 5)
+
+library(tidyverse)
+
+
 ```
 
+##  Explore data
+```{r}
+library(tidyverse)
+ikea = read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-11-03/ikea.csv")
+```
+
+```{r echo=FALSE}
+ikea %>%
+  ggplot(aes(width, price)) +
+  geom_point(alpha = 0.4) +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+
+
+
+##  Build a model
