@@ -1,18 +1,23 @@
 ---
 title: "Precios De Los Muebles"
 author: "Denis Rodríguez"
-date: '`Sys.Date()`'
+date: '`r Sys.Date()`'
 output: github_document
 ---
 
 Vamos a predecir los precios de los muebles usando el dataset de tidyTuesday.
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(cache = TRUE, cache.lazy = FALSE, warning = FALSE,
-                      message = FALSE, echo = TRUE, dpi = 180,
-                      fig.width = 8, fig.height = 5)
-
+knitr::opts_chunk$set(
+	fig.height = 5,
+	fig.width = 8,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE,
+	cache.lazy = FALSE,
+	dpi = 180
+)
 library(tidyverse)
-
+library(tidymodels)
 
 ```
 
@@ -26,10 +31,10 @@ ikea = read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/m
 ```{r}
 library(funModeling)
 ikea %>%
-  na.omit() %>%
   df_status()
 ```
 
+cómo se relaciona el precio con otras dimensiones de los muebles?
 ```{r echo=FALSE}
 ikea %>%
   na.omit()%>%
@@ -38,9 +43,78 @@ ikea %>%
   ggplot(aes(value, price, color = dim)) +
   geom_point(alpha = 0.4, show.legend = FALSE) +
   scale_y_log10() +
-  facet_wrap(~dim, scales = "free_x")
+  facet_wrap(~dim, scales = "free_x") +
+  labs(x=NULL)
 
 ```
 
+```{r}
+ikea_df <- ikea %>%
+  select(price, name, category, depth:width) %>%
+  mutate(price = log10(price)) %>% 
+  mutate_if(is.character, factor)
+  
+```
 
 ##  Build a model
+```{r}
+library(tidymodels)
+set.seed(123)
+ikea_split = initial_split(ikea_df, prop = 3/4, strata = price)
+ikea_train = training(ikea_split)
+ikea_test = testing(ikea_split)
+
+# Tomamos muestras aplicando validación cruzada, para comparar nuestros modelos.
+set.seed(234)
+ikea_folds = vfold_cv(ikea_train, strata = price, v=10) # parace ser muy pequeño para predecir.
+
+# Dado que cv me devueve pocos datos , usamos:
+ikea_folds = bootstraps(ikea_train, strata = price) # hemos mejorado la cantidad para predecir (de 288 - 2772), ahora tenemos 25 muestras obteneidad del remuestreo
+```
+
+```{r}
+library(usemodels)
+
+use_ranger(price ~., data = ikea_train)
+```
+
+```{r}
+library(textrecipes)
+library(janitor)
+library(ranger)
+ranger_recipe <- 
+  recipe(formula = price ~ ., data = ikea_train) %>% 
+  step_other(name, category, threshold = 0.01) %>% 
+  step_clean_levels(name, category) %>%
+  step_impute_knn(depth, height, width) # imputamos los valores perdidos
+
+ranger_spec <- 
+  rand_forest(mtry = tune(), min_n = tune(), trees = 1000) %>% 
+  set_mode("regression") %>% 
+  set_engine("ranger") 
+
+ranger_workflow <- 
+  workflow() %>% 
+  add_recipe(ranger_recipe) %>% 
+  add_model(ranger_spec) 
+
+set.seed(94636)
+ranger_tune <-
+  tune_grid(ranger_workflow, resamples = ikea_folds,
+  grid = 11)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
