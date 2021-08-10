@@ -5,6 +5,7 @@ date: '`Sys.Date()`'
 output: github_document
 ---
 
+Vamos a predecir los precios de los muebles usando el dataset de tidyTuesday.
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(cache = TRUE, cache.lazy = FALSE, warning = FALSE,
                       message = FALSE, echo = TRUE, dpi = 180,
@@ -21,15 +22,25 @@ library(tidyverse)
 ikea = read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-11-03/ikea.csv")
 ```
 
-```{r echo=FALSE}
+### Auditoria de datos
+```{r}
+library(funModeling)
 ikea %>%
-  ggplot(aes(width, price)) +
-  geom_point(alpha = 0.4) +
-  scale_x_log10() +
-  scale_y_log10()
+  na.omit() %>%
+  df_status()
 ```
 
+```{r echo=FALSE}
+ikea %>%
+  na.omit()%>%
+  select(X, price, depth:width) %>%
+  pivot_longer(depth:width, names_to = "dim") %>%
+  ggplot(aes(value, price, color = dim)) +
+  geom_point(alpha = 0.4, show.legend = FALSE) +
+  scale_y_log10() +
+  facet_wrap(~dim, scales = "free_x")
 
+```
 
 
 ##  Build a model
